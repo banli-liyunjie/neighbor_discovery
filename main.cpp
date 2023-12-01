@@ -2,9 +2,16 @@
 #include <math.h>
 #include <iostream>
 #include <fstream>
-#include <unistd.h> //linux
-// #include <direct.h> //windows
+#if defined(_WIN32) || defined(_WIN64)
+// Windows-specific code
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
 using namespace std;
+
+ofstream of;
 
 parameter para = {
     .N = 32,
@@ -244,7 +251,22 @@ namespace FSBA
     }
 }
 
-ofstream of;
+string get_work_dir()
+{
+    char buffer[128];
+#if defined(_WIN32) || defined(_WIN64)
+    GetModuleFileName(NULL, buffer, sizeof(buffer) - 1);
+    string full_path(buffer);
+    string directory = full_path.substr(0, full_path.find_last_of("\\/"));
+#else
+    ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+    buffer[count] = '\0';
+    string full_path(buffer);
+    string directory = full_path.substr(0, full_path.find_last_of("/"));
+#endif
+    cout << "current executable directory: " << directory << std::endl;
+    return directory;
+}
 
 /**
  * * -n|--node             set number of network nodes
@@ -322,16 +344,8 @@ int main(int argc, char *argv[])
         return -1;
     }
     srand((unsigned)time(NULL));
-    char *buffer;
-    if ((buffer = getcwd(NULL, 0)) == NULL)
-    {
-        perror("getcwd error");
-        return -1;
-    }
-    else
-    {
-        cout << buffer << endl;
-    }
+    string buffer;
+    buffer = get_work_dir();
     //*****************************************************************************************************************************
     SBAD::updata_L();
     OSBA::updata_L();
