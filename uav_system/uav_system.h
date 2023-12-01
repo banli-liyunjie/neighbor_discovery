@@ -5,30 +5,40 @@
 #include <unordered_map>
 
 #define PI 3.1415926535
-#define RADIUS 500
 
-// maximum number of time slots per simulation, i.e., the time slot at which the simulation ends
-#define MAX_SLOT 1500
-// output time slot interval
-#define OUT_SLOT 36
+struct parameter
+{
+    /// @brief number of network nodes, and it is recommended for this number to be even
+    int N;
+    /// @brief number of sectors per node and this number must be even
+    int K;
+    /// @brief node communication range
+    int RADIUS;
+    /// @brief spatial range x of the network
+    int range_x;
+    /// @brief spatial range y of the network
+    int range_y;
+
+    /// @brief maximum number of time slots per simulation, i.e., the time slot at which the simulation ends
+    int MAX_SLOT;
+    /// @brief output time slot interval
+    int OUT_SLOT;
+};
 
 class uav_system
 {
 
 public:
-    uav_system(int _N, int _K, int _range_x, int _range_y) : N(_N),
-                                                             K(_K),
-                                                             range_x(_range_x),
-                                                             range_y(_range_y)
+    uav_system(parameter *para) : sim_para(para)
     {
-        alpha = 1.0 * 360 / K;
-        uav_nodes.resize(N);
-        for (int n = 0; n < N; ++n)
+        alpha = 1.0 * 360 / sim_para->K;
+        uav_nodes.resize(sim_para->N);
+        for (int n = 0; n < sim_para->N; ++n)
         {
-            uav_nodes[n].set_loc(location(rand() % range_x, rand() % range_y));
+            uav_nodes[n].set_loc(location(rand() % sim_para->range_x, rand() % sim_para->range_y));
             uav_nodes[n].set_id(n);
         }
-        uav_dir_nebs.resize(N, std::vector<std::unordered_set<int>>(K));
+        uav_dir_nebs.resize(sim_para->N, std::vector<std::unordered_set<int>>(sim_para->K));
         init();
         // uav_neb_dir.resize(N,std::vector<int>(N,-1));
     }
@@ -60,14 +70,8 @@ private:
     /// @brief after resetting the node positions, reset the position relationship table among nodes
     void init();
 
-    /// @brief number of nodes in the network
-    int N;
-    /// @brief number of sectors per node
-    int K;
-    /// @brief spatial range x of the network
-    int range_x;
-    /// @brief spatial range y of the network
-    int range_y;
+    parameter *sim_para;
+
     /// @brief sector angle size
     double alpha;
 
@@ -75,6 +79,7 @@ private:
     std::vector<uav_node> uav_nodes;
     /// @brief two-dimensional array where each element is a set. uav_dir_nebs[n][k] represents the set of all neighboring nodes in sector direction k for node n
     std::vector<std::vector<std::unordered_set<int>>> uav_dir_nebs;
+
     /// @brief two-dimensional array that stores the sector numbers where neighbors are located. uavNebDir[i][j] represents the sector (number) where node j is in relation to node i. A value of -1 indicates that the two nodes are not neighbors
     // std::vector<std::vector<int>> uav_neb_dir;
 };

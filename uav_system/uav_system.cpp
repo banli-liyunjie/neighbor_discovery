@@ -7,14 +7,14 @@ using namespace std;
 void uav_system::init()
 {
     nei_nums = 0;
-    for (int i = 0; i < N; ++i)
+    for (int i = 0; i < sim_para->N; ++i)
     {
-        for (int j = i + 1; j < N; ++j)
+        for (int j = i + 1; j < sim_para->N; ++j)
         {
             double ijX = uav_nodes[j].get_loc().x - uav_nodes[i].get_loc().x;
             double ijY = uav_nodes[j].get_loc().y - uav_nodes[i].get_loc().y;
             double dis = sqrt(ijX * ijX + ijY * ijY);
-            if (dis > RADIUS)
+            if (dis > sim_para->RADIUS)
                 continue;
             double cosA = ijX / dis, sinA = ijY / dis;
             double A = 180 * acos(cosA) / PI;
@@ -22,7 +22,7 @@ void uav_system::init()
                 A = 360 - A;
             int dirK = A / alpha;
             uav_dir_nebs[i][dirK].emplace(j);
-            uav_dir_nebs[j][(dirK + K / 2) % K].emplace(i);
+            uav_dir_nebs[j][(dirK + sim_para->K / 2) % sim_para->K].emplace(i);
             // uav_neb_dir[i][j]=dirK;
             // uav_neb_dir[j][i]=(dirK+K/2)%K;
             ++nei_nums;
@@ -32,9 +32,9 @@ void uav_system::init()
 
 void uav_system::reset_nodes()
 {
-    for (int n = 0; n < N; ++n)
+    for (int n = 0; n < sim_para->N; ++n)
     {
-        uav_nodes[n].set_loc(location(rand() % range_x, rand() % range_y));
+        uav_nodes[n].set_loc(location(rand() % sim_para->range_x, rand() % sim_para->range_y));
         uav_nodes[n].set_id(n);
     }
     for (auto &uav_dir : uav_dir_nebs)
@@ -73,7 +73,7 @@ std::vector<double> uav_system::sequential_scan(
     int (*transmission_sequence)(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id),
     int (*sector_scan_sequence)(int t, int transmission_sta, int current_work_sta, int transmission_flag))
 {
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //******************************************************************************************************************
     int find_nei = 0; // the number of discovered neighboring node pairs
     vector<double> out_data;
 
@@ -81,13 +81,13 @@ std::vector<double> uav_system::sequential_scan(
      * In the first and second handshake, record whether the current reception is correct.
      * Set the value to 1 only if the receiving node correctly receives the corresponding information; otherwise, set it to 0
      * */
-    vector<int> receive_flag(N, 0);
-    vector<int> reply_node_id(N, -1); // nodes to reply to in the second and third handshake
-    unordered_set<int> uset;          // record the discovered neighbor pairs that have mutually identified each other
-    for (int t = 0; t < MAX_SLOT; ++t)
+    vector<int> receive_flag(sim_para->N, 0);
+    vector<int> reply_node_id(sim_para->N, -1); // nodes to reply to in the second and third handshake
+    unordered_set<int> uset;                    // record the discovered neighbor pairs that have mutually identified each other
+    for (int t = 0; t < sim_para->MAX_SLOT; ++t)
     {
         clear_all_messages();
-        for (int n = 0; n < N; ++n)
+        for (int n = 0; n < sim_para->N; ++n)
         {
             // determine node status, transmission/reception, and sector scanning sequences
             // the order of these three functions must not be changed; design them in a specific sequence
@@ -97,7 +97,7 @@ std::vector<double> uav_system::sequential_scan(
             uav_nodes[n].set_scanned_sector(sector_scan_sequence(t, uav_nodes[n].get_receive_sta(), uav_nodes[n].get_current_sta(), receive_flag[n]));
         }
         // within this time slot, the sending node transmits information
-        for (int sender = 0; sender < N; ++sender)
+        for (int sender = 0; sender < sim_para->N; ++sender)
         {
             if (uav_nodes[sender].get_receive_sta() == SENDING)
             {
@@ -111,7 +111,8 @@ std::vector<double> uav_system::sequential_scan(
                 for (auto receiver : uav_dir_nebs[sender][sector])
                 {
                     // nodes in reception status, aligned with the sector
-                    if (uav_nodes[receiver].get_receive_sta() == RECEIVING && ((uav_nodes[receiver].get_scanned_sector() + K / 2) % K) == sector)
+                    if (uav_nodes[receiver].get_receive_sta() == RECEIVING &&
+                        ((uav_nodes[receiver].get_scanned_sector() + sim_para->K / 2) % sim_para->K) == sector)
                     {
                         uav_nodes[receiver].receive_message(mes);
                     }
@@ -119,7 +120,7 @@ std::vector<double> uav_system::sequential_scan(
             }
         }
         // during this time slot, the receiving node checks for received information
-        for (int receiver = 0; receiver < N; ++receiver)
+        for (int receiver = 0; receiver < sim_para->N; ++receiver)
         {
             if (uav_nodes[receiver].get_receive_sta() == RECEIVING)
             {
@@ -177,7 +178,7 @@ std::vector<double> uav_system::sequential_scan(
             }
         }
 
-        if (((t + 1) % OUT_SLOT) == 0)
+        if (((t + 1) % sim_para->OUT_SLOT) == 0)
         {
             out_data.emplace_back(1.0 * find_nei / nei_nums);
         }
