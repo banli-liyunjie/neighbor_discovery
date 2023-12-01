@@ -29,14 +29,33 @@ void uav_system::init()
         }
     }
 }
+void uav_system::set_node_location()
+{
+    unordered_set<long> uset;
+    int x, y;
+    int i, MAX_LOOP = 10;
+    for (int n = 0; n < sim_para->N; ++n)
+    {
+        i = 0;
+        do
+        {
+            x = rand() % sim_para->range_x;
+            y = rand() % sim_para->range_y;
+        } while (uset.find((x << 16) | y) != uset.end() && i++ < MAX_LOOP - 1);
+        if (i == MAX_LOOP)
+        {
+            printf("cann't reset location of nodes\n");
+            exit(1);
+        }
+        uset.emplace((x << 16) | y);
+        uav_nodes[n].set_loc(location(x, y));
+        uav_nodes[n].set_id(n);
+    }
+}
 
 void uav_system::reset_nodes()
 {
-    for (int n = 0; n < sim_para->N; ++n)
-    {
-        uav_nodes[n].set_loc(location(rand() % sim_para->range_x, rand() % sim_para->range_y));
-        uav_nodes[n].set_id(n);
-    }
+    set_node_location();
     for (auto &uav_dir : uav_dir_nebs)
     {
         for (auto &uset : uav_dir)

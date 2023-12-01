@@ -33,11 +33,7 @@ public:
     {
         alpha = 1.0 * 360 / sim_para->K;
         uav_nodes.resize(sim_para->N);
-        for (int n = 0; n < sim_para->N; ++n)
-        {
-            uav_nodes[n].set_loc(location(rand() % sim_para->range_x, rand() % sim_para->range_y));
-            uav_nodes[n].set_id(n);
-        }
+        set_node_location();
         uav_dir_nebs.resize(sim_para->N, std::vector<std::unordered_set<int>>(sim_para->K));
         init();
         // uav_neb_dir.resize(N,std::vector<int>(N,-1));
@@ -67,6 +63,7 @@ public:
     int nei_nums;
 
 private:
+    void set_node_location();
     /// @brief after resetting the node positions, reset the position relationship table among nodes
     void init();
 
