@@ -270,15 +270,16 @@ ofstream of;
         para.parameter = func(string(argv[(++i)++]));                               \
         continue;                                                                   \
     }
-#define set_parameters()                                   \
-    do                                                     \
-    {                                                      \
-        for (int i = 1; i < argc;)                         \
-        {                                                  \
-            REG(SET_PARAMETER)                             \
-            cout << "unknown option :" << argv[i] << endl; \
-            return -1;                                     \
-        }                                                  \
+#define set_parameters()                                      \
+    do                                                        \
+    {                                                         \
+        for (int i = 1; i < argc;)                            \
+        {                                                     \
+            REG(SET_PARAMETER)                                \
+            cout << "unknown option : \"" << argv[i]          \
+                 << "\" or no value for this option" << endl; \
+            return -1;                                        \
+        }                                                     \
     } while (0)
 
 #define PRINT_PARAMETER(option1, option2, parameter, func) \
