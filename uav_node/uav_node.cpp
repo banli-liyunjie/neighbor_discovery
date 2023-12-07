@@ -34,13 +34,13 @@ int uav_node::get_current_sta() const
     return current_sta;
 }
 
-void uav_node::set_receive_sta(int sta)
+void uav_node::set_transmission_sta(int sta)
 {
-    receive_sta = sta;
+    transmission_sta = sta;
 }
-int uav_node::get_receive_sta() const
+int uav_node::get_transmission_sta() const
 {
-    return receive_sta;
+    return transmission_sta;
 }
 
 void uav_node::set_scanned_sector(int sector)

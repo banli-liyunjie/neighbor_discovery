@@ -88,19 +88,14 @@ void uav_system::clear_all_messages()
 }
 
 std::vector<double> uav_system::sequential_scan(
-    int (*work_sta)(int t, int last_transmission_sta, int last_work_sta, int transmission_flag),
-    int (*transmission_sequence)(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id),
-    int (*sector_scan_sequence)(int t, int transmission_sta, int current_work_sta, int transmission_flag))
+    int (*work_sta)(int t, int last_transmission_sta, int last_work_sta, int reply_id),
+    int (*transmission_sequence)(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int reply_id),
+    int (*sector_scan_sequence)(int t, int transmission_sta, int current_work_sta))
 {
     //******************************************************************************************************************
     int find_nei = 0; // the number of discovered neighboring node pairs
     vector<double> out_data;
 
-    /**
-     * In the first and second handshake, record whether the current reception is correct.
-     * Set the value to 1 only if the receiving node correctly receives the corresponding information; otherwise, set it to 0
-     * */
-    vector<int> receive_flag(sim_para->N, 0);
     vector<int> reply_node_id(sim_para->N, -1); // nodes to reply to in the second and third handshake
     unordered_set<int> uset;                    // record the discovered neighbor pairs that have mutually identified each other
     for (int t = 0; t < sim_para->MAX_SLOT; ++t)
@@ -111,14 +106,14 @@ std::vector<double> uav_system::sequential_scan(
             // determine node status, transmission/reception, and sector scanning sequences
             // the order of these three functions must not be changed; design them in a specific sequence
 
-            uav_nodes[n].set_current_sta(work_sta(t, uav_nodes[n].get_receive_sta(), uav_nodes[n].get_current_sta(), receive_flag[n]));
-            uav_nodes[n].set_receive_sta(transmission_sequence(t, uav_nodes[n].get_bitsta(), uav_nodes[n].get_receive_sta(), uav_nodes[n].get_current_sta(), receive_flag[n], reply_node_id[n]));
-            uav_nodes[n].set_scanned_sector(sector_scan_sequence(t, uav_nodes[n].get_receive_sta(), uav_nodes[n].get_current_sta(), receive_flag[n]));
+            uav_nodes[n].set_current_sta(work_sta(t, uav_nodes[n].get_transmission_sta(), uav_nodes[n].get_current_sta(), reply_node_id[n]));
+            uav_nodes[n].set_transmission_sta(transmission_sequence(t, uav_nodes[n].get_bitsta(), uav_nodes[n].get_transmission_sta(), uav_nodes[n].get_current_sta(), reply_node_id[n]));
+            uav_nodes[n].set_scanned_sector(sector_scan_sequence(t, uav_nodes[n].get_transmission_sta(), uav_nodes[n].get_current_sta()));
         }
         // within this time slot, the sending node transmits information
         for (int sender = 0; sender < sim_para->N; ++sender)
         {
-            if (uav_nodes[sender].get_receive_sta() == SENDING)
+            if (uav_nodes[sender].get_transmission_sta() == SENDING)
             {
                 // sending node
                 int dest_id = reply_node_id[sender];
@@ -130,7 +125,7 @@ std::vector<double> uav_system::sequential_scan(
                 for (auto receiver : uav_dir_nebs[sender][sector])
                 {
                     // nodes in reception status, aligned with the sector
-                    if (uav_nodes[receiver].get_receive_sta() == RECEIVING &&
+                    if (uav_nodes[receiver].get_transmission_sta() == RECEIVING &&
                         ((uav_nodes[receiver].get_scanned_sector() + sim_para->K / 2) % sim_para->K) == sector)
                     {
                         uav_nodes[receiver].receive_message(mes);
@@ -141,7 +136,7 @@ std::vector<double> uav_system::sequential_scan(
         // during this time slot, the receiving node checks for received information
         for (int receiver = 0; receiver < sim_para->N; ++receiver)
         {
-            if (uav_nodes[receiver].get_receive_sta() == RECEIVING)
+            if (uav_nodes[receiver].get_transmission_sta() == RECEIVING)
             {
                 // receiving node
                 string mes = uav_nodes[receiver].get_receive_buffer();
@@ -156,44 +151,28 @@ std::vector<double> uav_system::sequential_scan(
                     if (dest_id == -1)
                     {
                         // in a one-way handshake state, and the two nodes have not yet discovered each other
-                        if (uav_nodes[receiver].get_current_sta() == 0 && uset.find(u) == uset.end())
+                        if (uav_nodes[receiver].get_current_sta() == FIRST_HANDSHAKE && uset.find(u) == uset.end())
                         {
                             reply_node_id[receiver] = src_id;
-                            receive_flag[receiver] = 1;
-                        }
-                        else
-                        {
-                            receive_flag[receiver] = 0;
                         }
                     }
                     else if (dest_id == receiver) // the information must be intended for this node
                     {
                         // three-way handshake
-                        if (uav_nodes[receiver].get_current_sta() == 2)
+                        if (uav_nodes[receiver].get_current_sta() == THIRD_HANDSHAKE)
                         {
                             if (uset.find(u) == uset.end())
                             {
                                 uset.emplace(u);
                                 find_nei++;
                             }
-                            // regardless of whether the three-way handshake is received successfully or not, no reply is required
-                            receive_flag[receiver] = 0;
                         }
                         else
                         {
                             reply_node_id[receiver] = src_id;
-                            receive_flag[receiver] = 1;
                         }
                     }
-                    else
-                    {
-                        receive_flag[receiver] = 0;
-                    }
                 }
-            }
-            else
-            {
-                receive_flag[receiver] = 0;
             }
         }
 

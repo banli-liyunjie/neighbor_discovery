@@ -5,7 +5,12 @@
 
 #define RECEIVING 0
 #define SENDING 1
-#define SILENT 2
+
+#define FIRST_HANDSHAKE 0
+#define SECOND_HANDSHAKE 1
+#define THIRD_HANDSHAKE 2
+
+#define SILENT -1
 
 #define MES_EMPTY ""
 #define MES_ERR "N"
@@ -35,8 +40,8 @@ public:
     void set_id(int id);
     void set_current_sta(int sta);
     int get_current_sta() const;
-    void set_receive_sta(int sta);
-    int get_receive_sta() const;
+    void set_transmission_sta(int sta);
+    int get_transmission_sta() const;
     void set_scanned_sector(int sector);
     int get_scanned_sector() const;
 
@@ -64,7 +69,7 @@ private:
     /// @brief current work status of the node
     int current_sta;
     /// @brief node transmission and reception status, 0: receiving, 1: sending, 2: silent
-    int receive_sta;
+    int transmission_sta;
     /// @brief scanning sector, -1: inactive, others: corresponding sector number
     int scanned_sector;
 

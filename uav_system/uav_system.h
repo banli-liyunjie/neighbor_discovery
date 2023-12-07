@@ -55,9 +55,9 @@ public:
     /// @param sector_scan_sequence function pointer for sector scanning sequence function, design required
     /// @return return the neighbor discovery rate array, return out_data; where out_data[k] represents the neighbor discovery rate at k * OUT_SLOT in the algorithm.
     std::vector<double> sequential_scan(
-        int (*work_sta)(int t, int last_transmission_sta, int last_work_sta, int transmission_flag),
-        int (*transmission_sequence)(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id),
-        int (*sector_scan_sequence)(int t, int transmission_sta, int current_work_sta, int transmission_flag));
+        int (*work_sta)(int t, int last_transmission_sta, int last_work_sta, int reply_id),
+        int (*transmission_sequence)(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int reply_id),
+        int (*sector_scan_sequence)(int t, int transmission_sta, int current_work_sta));
 
     /// @brief number of neighboring node pairs in the network
     int nei_nums;

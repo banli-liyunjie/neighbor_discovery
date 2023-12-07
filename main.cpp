@@ -51,24 +51,24 @@ namespace SBAD
         }
     }
     /// @brief SBA-D state transition function
-    int work_sta(int t, int last_transmission_sta, int last_work_sta, int transmission_flag)
+    int work_sta(int t, int last_transmission_sta, int last_work_sta, int reply_id)
     {
         if (t % 3 == 0)
-            return 0;
+            return FIRST_HANDSHAKE;
         if (t % 3 == 1)
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
-                return 1;
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
+                return SECOND_HANDSHAKE;
         }
         else
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
-                return 2;
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
+                return THIRD_HANDSHAKE;
         }
-        return -1;
+        return SILENT;
     }
     /// @brief SBA-D transmission and reception state transition function
-    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id)
+    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int reply_id)
     {
         int bit_pos = (t / (para.K * 3)) % L;
         if (t % 3 == 0)
@@ -77,22 +77,22 @@ namespace SBAD
         }
         else if (t % 3 == 1)
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
             {
                 return !bitsta[bit_pos];
             }
         }
         else
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
                 return bitsta[bit_pos];
         }
         return SILENT;
     }
     /// @brief SBA-D scanning sequence transition function
-    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta, int transmission_flag)
+    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta)
     {
-        if (transmission_sta == 2)
+        if (transmission_sta == SILENT)
             return -1;
         return ((t / 3) % para.K + ((t % 3 == 1) ? (!transmission_sta) : (transmission_sta)) * para.K / 2) % para.K;
     }
@@ -123,59 +123,59 @@ namespace OSBA
         }
     }
     /// @brief OSBA state transition function
-    int work_sta(int t, int last_transmission_sta, int last_work_sta, int transmission_flag)
+    int work_sta(int t, int last_transmission_sta, int last_work_sta, int reply_id)
     {
         if ((t % (L + 2)) == 0)
         {
-            return 0;
+            return FIRST_HANDSHAKE;
         }
         if ((t % (L + 2)) < L)
         {
-            if (last_work_sta == -1)
-                return -1;
-            if (last_transmission_sta == RECEIVING && transmission_flag == 1)
-                return -1;
+            if (last_work_sta == SILENT)
+                return SILENT;
+            if (last_transmission_sta == RECEIVING && reply_id != -1)
+                return SILENT;
             else
-                return 0;
+                return FIRST_HANDSHAKE;
         }
         if ((t % (L + 2)) == L)
-            return 1;
+            return SECOND_HANDSHAKE;
         else
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
             {
-                return 2;
+                return THIRD_HANDSHAKE;
             }
         }
-        return -1;
+        return SILENT;
     }
     /// @brief OSBA transmission and reception state transition function
-    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id)
+    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int reply_id)
     {
-        if (current_work_sta == -1)
+        if (current_work_sta == SILENT)
             return SILENT;
-        if (current_work_sta == 0)
+        if (current_work_sta == FIRST_HANDSHAKE)
         {
             int bit_pos = t % (L + 2);
             return bitsta[bit_pos];
         }
-        if (current_work_sta == 1)
+        if (current_work_sta == SECOND_HANDSHAKE)
         {
             if (reply_id != -1)
                 return SENDING;
             else
                 return RECEIVING;
         }
-        if (current_work_sta == 2)
+        if (current_work_sta == THIRD_HANDSHAKE)
         {
             return !last_transmission_sta;
         }
         return SILENT;
     }
     /// @brief OSBA scanning sequence transition function
-    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta, int transmission_flag)
+    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta)
     {
-        if (transmission_sta == 2)
+        if (transmission_sta == SILENT)
             return -1;
         int ST = (t / (L + 2)) % para.K;
 
@@ -213,39 +213,39 @@ namespace FSBA
         }
     }
     /// @brief FSBA state transition function
-    int work_sta(int t, int last_transmission_sta, int last_work_sta, int transmission_flag)
+    int work_sta(int t, int last_transmission_sta, int last_work_sta, int reply_id)
     {
-        if (last_work_sta == 2 || t == 0)
-            return 0;
-        if (last_work_sta == 0)
+        if (last_work_sta == THIRD_HANDSHAKE || t == 0)
+            return FIRST_HANDSHAKE;
+        if (last_work_sta == FIRST_HANDSHAKE)
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
-                return 1;
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
+                return SECOND_HANDSHAKE;
             else
-                return 0;
+                return FIRST_HANDSHAKE;
         }
-        if (last_work_sta == 1)
+        if (last_work_sta == SECOND_HANDSHAKE)
         {
-            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && transmission_flag == 1))
-                return 2;
+            if (last_transmission_sta == SENDING || (last_transmission_sta == RECEIVING && reply_id != -1))
+                return THIRD_HANDSHAKE;
             else
-                return 0;
+                return FIRST_HANDSHAKE;
         }
-        return -1;
+        return SILENT;
     }
     /// @brief FSBA transmission and reception state transition function
-    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int transmission_flag, int reply_id)
+    int transmission_sequence(int t, std::vector<int> &bitsta, int last_transmission_sta, int current_work_sta, int reply_id)
     {
         int bit_pos = (t - current_work_sta) % L;
         return (bitsta[bit_pos] + current_work_sta) % 2;
     }
     /// @brief FSBA scanning sequence transition function
-    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta, int transmission_flag)
+    int sector_scan_sequence(int t, int transmission_sta, int current_work_sta)
     {
         int rt = t - current_work_sta;
         int ST = (rt / L + rt % L) % para.K;
 
-        int et = current_work_sta == 1 ? (!transmission_sta) : transmission_sta;
+        int et = current_work_sta == SECOND_HANDSHAKE ? (!transmission_sta) : transmission_sta;
 
         return (ST + et * para.K / 2) % para.K;
     }
@@ -356,12 +356,14 @@ int main(int argc, char *argv[])
     vector<double> result_OSBA;
     vector<double> result_FSBA;
 
+    vector<double> result;
+
     for (int time = 0; time < TIME; ++time)
     {
         // cout << time << " : " << pU->nei_nums << endl;
 
         pU->set_node_bitsta(SBAD::set_bitsta);
-        vector<double> result = pU->sequential_scan(SBAD::work_sta, SBAD::transmission_sequence, SBAD::sector_scan_sequence);
+        result = pU->sequential_scan(SBAD::work_sta, SBAD::transmission_sequence, SBAD::sector_scan_sequence);
         if (result_SBAD.size() == 0)
         {
             result_SBAD = result;
