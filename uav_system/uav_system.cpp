@@ -44,7 +44,7 @@ void uav_system::set_node_location()
         } while (uset.find((x << 16) | y) != uset.end() && i++ < MAX_LOOP - 1);
         if (i == MAX_LOOP)
         {
-            printf("cann't reset location of nodes\n");
+            printf("can't reset location of nodes\n");
             exit(1);
         }
         uset.emplace((x << 16) | y);

@@ -21,10 +21,8 @@ parameter para = {
     .range_y = 1500,
     .MAX_SLOT = 1500,
     .OUT_SLOT = 36,
+    .TIME = 100,
 };
-
-// simulation loop count, resetting the node's position with each iteration
-#define TIME 100
 
 /// @brief SBA-D
 namespace SBAD
@@ -276,6 +274,7 @@ string get_work_dir()
  * * -y|--range_y          set spatial range y of the network
  * * -s|--max              set maximum number of time slots per simulation
  * * -o|--out              set output time slot interval
+ * * -t|--time             set simulation loop count
  */
 #define REG(FUNC)                          \
     FUNC("-n", "--node", N, stoi)          \
@@ -284,7 +283,8 @@ string get_work_dir()
     FUNC("-x", "--range_x", range_x, stoi) \
     FUNC("-y", "--range_y", range_y, stoi) \
     FUNC("-s", "--max", MAX_SLOT, stoi)    \
-    FUNC("-o", "--out", OUT_SLOT, stoi)
+    FUNC("-o", "--out", OUT_SLOT, stoi)    \
+    FUNC("-t", "--time", TIME, stoi)
 
 #define SET_PARAMETER(option1, option2, parameter, func)                            \
     if ((string(argv[i]) == option1 || string(argv[i]) == option2) && i + 1 < argc) \
@@ -305,7 +305,7 @@ string get_work_dir()
     } while (0)
 
 #define PRINT_PARAMETER(option1, option2, parameter, func) \
-    cout << "    " << #parameter << " = " << para.parameter << endl;
+    cout << "    " << #parameter << " = " << para.parameter << "   (" << option1 << "|" << option2 << ")" << endl;
 #define print_parameters()                     \
     do                                         \
     {                                          \
@@ -326,11 +326,16 @@ int check_parameter(parameter &para)
     {
         cout << "it is recommended for this number (N) to be even\n";
     }
-    if (para.N <= 0 || para.K <= 0 || para.RADIUS <= 0 || para.range_x <= 0 || para.range_y <= 0 || para.MAX_SLOT <= 0 || para.OUT_SLOT <= 0)
+
+#define _PARA(option1, option2, parameter, func) || para.parameter <= 0
+#define VALUE() 0 REG(_PARA)
+    if (VALUE())
     {
         cout << "all parameters need to be greater than 0\n";
         return -1;
     }
+#undef VALUE
+#undef _PARA
 
     return 0;
 }
@@ -374,7 +379,7 @@ int main(int argc, char *argv[])
 
     vector<double> result;
 
-    for (int time = 0; time < TIME; ++time)
+    for (int time = 0; time < para.TIME; ++time)
     {
         // cout << time << " : " << pU->nei_nums << endl;
 
@@ -402,21 +407,21 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < result_SBAD.size(); ++i)
     {
-        result_SBAD[i] /= TIME;
+        result_SBAD[i] /= para.TIME;
         of << result_SBAD[i] << endl;
     }
     of << "," << endl;
 
     for (int i = 0; i < result_OSBA.size(); ++i)
     {
-        result_OSBA[i] /= TIME;
+        result_OSBA[i] /= para.TIME;
         of << result_OSBA[i] << endl;
     }
     of << "," << endl;
 
     for (int i = 0; i < result_FSBA.size(); ++i)
     {
-        result_FSBA[i] /= TIME;
+        result_FSBA[i] /= para.TIME;
         of << result_FSBA[i] << endl;
     }
 

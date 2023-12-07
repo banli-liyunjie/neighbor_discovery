@@ -23,6 +23,8 @@ struct parameter
     int MAX_SLOT;
     /// @brief output time slot interval
     int OUT_SLOT;
+    /// @brief simulation loop count, resetting the node's position with each iteration
+    int TIME;
 };
 
 class uav_system
@@ -67,7 +69,7 @@ private:
     /// @brief after resetting the node positions, reset the position relationship table among nodes
     void init();
 
-    parameter *sim_para;
+    const parameter *sim_para;
 
     /// @brief sector angle size
     double alpha;
