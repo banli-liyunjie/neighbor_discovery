@@ -335,6 +335,22 @@ int check_parameter(parameter &para)
     return 0;
 }
 
+#define append_result(res1, res2)                 \
+    do                                            \
+    {                                             \
+        if (res1.size() == 0)                     \
+        {                                         \
+            res1 = res2;                          \
+        }                                         \
+        else                                      \
+        {                                         \
+            for (int i = 0; i < res1.size(); ++i) \
+            {                                     \
+                res1[i] += res2[i];               \
+            }                                     \
+        }                                         \
+    } while (0)
+
 int main(int argc, char *argv[])
 {
     set_parameters();
@@ -364,45 +380,15 @@ int main(int argc, char *argv[])
 
         pU->set_node_bitsta(SBAD::set_bitsta);
         result = pU->sequential_scan(SBAD::work_sta, SBAD::transmission_sequence, SBAD::sector_scan_sequence);
-        if (result_SBAD.size() == 0)
-        {
-            result_SBAD = result;
-        }
-        else
-        {
-            for (int i = 0; i < result_SBAD.size(); ++i)
-            {
-                result_SBAD[i] += result[i];
-            }
-        }
+        append_result(result_SBAD, result);
 
         pU->set_node_bitsta(OSBA::set_bitsta);
         result = pU->sequential_scan(OSBA::work_sta, OSBA::transmission_sequence, OSBA::sector_scan_sequence);
-        if (result_OSBA.size() == 0)
-        {
-            result_OSBA = result;
-        }
-        else
-        {
-            for (int i = 0; i < result_OSBA.size(); ++i)
-            {
-                result_OSBA[i] += result[i];
-            }
-        }
+        append_result(result_OSBA, result);
 
         pU->set_node_bitsta(FSBA::set_bitsta);
         result = pU->sequential_scan(FSBA::work_sta, FSBA::transmission_sequence, FSBA::sector_scan_sequence);
-        if (result_FSBA.size() == 0)
-        {
-            result_FSBA = result;
-        }
-        else
-        {
-            for (int i = 0; i < result_FSBA.size(); ++i)
-            {
-                result_FSBA[i] += result[i];
-            }
-        }
+        append_result(result_FSBA, result);
 
         pU->reset_nodes();
     }
